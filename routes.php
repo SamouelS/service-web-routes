@@ -5,7 +5,7 @@ use Slim\Http\Response;
 
 // Routes
 
-$app->get('/{[table:patients|personnes|badges|infirmieres|visites}]', function (Request $request, Response $response, array $args) {
+$app->get('[/{table:patients|personnes|badges|infirmieres|visites}]', function (Request $request, Response $response, array $args) {
     $sqlRequest = 'SELECT * FROM '.preg_replace('/s$/', '', $args['table']);
     $retour = $this->db->query($sqlRequest);
     $json = array();
@@ -18,8 +18,8 @@ $app->get('/{[table:patients|personnes|badges|infirmieres|visites}]', function (
     //var_dump($sqlRequest);
 });
 
-$app->get('[/{table:patient|personne|badge|infirmiere|visite}/{id:\d*}]', function (Request $request, Response $response, array $args) {
-    
+$app->get('[/{table:patients|personnes|badges|infirmieres|visites}/{id:\d*}]', function (Request $request, Response $response, array $args) {
+    $sqlRequest = 'SELECT * FROM '.preg_replace('/s$/', '', $args['table']);
     $sqlRequest = 'SELECT * FROM '.$args['table'].' WHERE id='.$args['id'];
     $retour = $this->db->query($sqlRequest);
     $json= array();
