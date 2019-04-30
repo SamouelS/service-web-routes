@@ -5,8 +5,7 @@ use Slim\Http\Response;
 
 // Routes
 
-$app->get('/{[table:patients|personnes|badges|infirmieres|visites}]', function (Request $request, Response $response, array $args) {
-    //.preg_replace(RegEx, New, Variable)
+$app->get('/[{table:patients|personnes|badges|infirmieres|visites}]', function (Request $request, Response $response, array $args) {
     $sqlRequest = 'SELECT * FROM '.preg_replace('/s$/', '', $args['table']);
     $retour = $this->db->query($sqlRequest);
     $json = array();
@@ -19,9 +18,9 @@ $app->get('/{[table:patients|personnes|badges|infirmieres|visites}]', function (
     //var_dump($sqlRequest);
 });
 
-$app->get('[/{table:patient|personne|badge|infirmiere|visite}/{id:\d*}]', function (Request $request, Response $response, array $args) {
-    
-    $sqlRequest = 'SELECT * FROM '.$args['table'].' WHERE id='.$args['id'];
+$app->get('[/{table:patients|personnes|badges|infirmieres|visites}/{id:\d*}]', function (Request $request, Response $response, array $args) {
+
+    $sqlRequest = 'SELECT * FROM '.preg_replace('/s$/', '', $args['table']).' WHERE id='.$args['id'];
     $retour = $this->db->query($sqlRequest);
     $json= array();
     foreach ($retour as $row) {
@@ -29,19 +28,16 @@ $app->get('[/{table:patient|personne|badge|infirmiere|visite}/{id:\d*}]', functi
     }
     $json = json_encode($json);
     return $json;
-    //var_dump($sqlRequest);
+    var_dump($sqlRequest);
 
 });
 
 $app->get('/connect', function (Request $request, Response $response, array $args) {
-    $truc = $request->getParams();
-    foreach ($truc as $key=>$value) {
-        echo $key;
-        echo $value;
-    }
+    
     $sqlRequest = ' SELECT * 
                     FROM personne_login pl, personne p
-                    where pl.id = p.id';
+                    where pl.id = p.id
+                ';
     $retour = $this->db->query($sqlRequest); 
     $json['status'] = false;
     foreach ($retour as $row) {
@@ -49,25 +45,72 @@ $app->get('/connect', function (Request $request, Response $response, array $arg
             $json['status'] = true;
             $json['personne']=$row;
         }
+        
     }
     //var_dump($json);
     $json = json_encode($json);
     return $json;
+
 });
 
-$app->put('[/personnes/{id:\d*}]', function (Request $request, Response $response, array $args){
-    $sqlRequest = 'UPDATE personne Set ';
-    $retour = $request->getParams();
-    $i = 0;
-    foreach($retour as $paramerte=>$valeur) {
-        $i ++;
-        $sqlRequest += $paramerte.' = '.$valeur;
-        if (isset($retour[$i])) {
-            $sqlRequest += ' AND ';
-        } else {
-            $sqlRequest += ' WHERE id = '.$args['id'].';';
+$app->post('/personne/patient', function (Request $request, Response $response, array $args) {
+    $vretour=array('statut' => false);
+    $params = $request->getParsedBody();
+    $t = array(
+        'nom'=> array('type'=>'string','value'=>'null'), 
+        'prenom'=>array('type'=>'string','value'=>'null'), 
+        'sexe'=>array('type'=>'string','value'=>'null'), 
+        'date_naiss'=>array('type'=>'string','value'=>'null'), 
+        'date_deces'=>array('type'=>'string','value'=>'null'), 
+        'ad1'=>array('type'=>'string','value'=>'null'), 
+        'ad2'=>array('type'=>'string','value'=>'null'), 
+        'cp'=>array('type'=>'int','value'=>'null'), 
+        'ville'=>array('type'=>'string','value'=>'null'), 
+        'tel_fixe'=>array('type'=>'string','value'=>'null'), 
+        'tel_port'=>array('type'=>'string','value'=>'null'), 
+        'mail' => array('type'=>'string','value'=>'null')
+    );
+    foreach($t as $key=>$value)
+    {
+        if(isset($params[$key]))
+        {           
+            if($t[$key]['type']=='string')
+            {
+                $t[$key]['value']='"'.$params[$key].'"';
+            }
+            else
+            {
+                $t[$key]['value']=$params[$key];
+            }
+
         }
     }
-    var_dump($retour);
-    dump($sqlRequest);
+
+    $sqlRequest =   'INSERT INTO personne (nom, prenom, sexe, date_naiss, date_deces, ad1, ad2, cp, ville, tel_fixe, tel_port, mail)
+                    VALUES ('. $t['nom']['value'].','. $t['prenom']['value'].','. $t['sexe']['value'].','. $t['date_naiss']['value'].','. $t['date_deces']['value'].','. $t['ad1']['value'].','. $t['ad2']['value'].','. $t['cp']['value'].','. $t['ville']['value'].','. $t['tel_fixe']['value'].','. $t['tel_port']['value'].','. $t['mail']['value'].')';
+
+    if($this->db->query($sqlRequest)){
+        $vretour['statut'] = 'success';
+    }
+    $vretour = json_encode($vretour);
+    return $vretour;
+    //if($result == '')
+    //return $result;
+    //echo $sqlRequest;
+    //var_dump($result);
+
+
 });
+
+function execRequete($uneRequete,$obj)
+{		
+    $result = $obj->query($uneRequete);
+    if($result){
+        return $result; 
+    }
+    else{
+        echo "\nPDO::errorInfo():\n";
+        print_r($obj->errorInfo());
+    }  
+}
+
